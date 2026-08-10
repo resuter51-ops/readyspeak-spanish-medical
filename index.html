@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="theme-color" content="#1a6b3c"/>
+<title>ReadySpeak Spanish — Medical Edition</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(160deg, #1a6b3c 0%, #0d4a28 100%); min-height: 100vh; padding-bottom: 80px; }
+  h1 { text-align:center; color:white; font-size:1.4rem; font-weight:900; padding: 18px 16px 4px; text-shadow: 1px 1px 6px rgba(0,0,0,0.3); }
+  .subtitle { text-align:center; color:rgba(255,255,255,0.85); font-size:0.82rem; margin-bottom:16px; }
+  .brand { text-align:center; color:rgba(255,255,255,0.6); font-size:0.7rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding-top:6px; }
+  .save-hint { background:rgba(0,0,0,0.2); color:rgba(255,255,255,0.9); font-size:0.78rem; padding:10px 16px; text-align:center; line-height:1.5; }
+  .save-hint b { color: white; }
+  .dir-toggle { display:flex; gap:8px; padding:12px 16px 4px; max-width:460px; margin:0 auto; }
+  .dir-btn { flex:1; padding:10px; border:2px solid rgba(255,255,255,0.4); border-radius:12px; background:transparent; color:white; font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
+  .dir-btn.active { background:white; color:#1a6b3c; border-color:white; }
+  .search-bar { display:flex; align-items:center; background:rgba(255,255,255,0.95); border-radius:14px; margin:12px 16px; padding:10px 14px; gap:8px; max-width:460px; margin-left:auto; margin-right:auto; }
+  .search-icon { font-size:1rem; }
+  .search-bar input { border:none; outline:none; font-size:0.95rem; width:100%; background:transparent; color:#2c3e50; }
+  .cat-row { display:flex; gap:8px; overflow-x:auto; padding:0 16px 12px; max-width:460px; margin:0 auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .cat-row::-webkit-scrollbar { display:none; }
+  .cat-pill { flex-shrink:0; padding:8px 14px; border-radius:20px; border:none; cursor:pointer; font-weight:700; font-size:0.82rem; white-space:nowrap; background:rgba(255,255,255,0.25); color:white; transition:all 0.2s; }
+  .cat-pill.active { background:white; color:#1a6b3c; }
+  .phrase-list { padding:0 16px; max-width:460px; margin:0 auto; }
+  .phrase-card { background:white; border-radius:14px; padding:14px 16px; margin-bottom:10px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.08); transition:transform 0.15s; position:relative; }
+  .phrase-card:active { transform:scale(0.98); }
+  .phrase-card.speaking { box-shadow:0 0 0 3px #1a6b3c, 0 3px 12px rgba(0,0,0,0.12); }
+  .phrase-en { font-size:0.95rem; color:#2c3e50; font-weight:600; margin-bottom:6px; line-height:1.4; }
+  .phrase-es { font-size:1.1rem; color:#1a6b3c; font-weight:700; line-height:1.4; display:flex; align-items:center; gap:8px; }
+  .phrase-es .speak-icon { font-size:1.2rem; flex-shrink:0; }
+  .phrase-tag { font-size:0.65rem; color:#999; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+  .no-results { text-align:center; color:rgba(255,255,255,0.7); padding:40px 16px; font-size:0.95rem; }
+  .now-speaking { position:fixed; bottom:0; left:0; right:0; background:#1a6b3c; color:white; padding:14px 20px; text-align:center; font-weight:700; font-size:0.9rem; transform:translateY(100%); transition:transform 0.3s; z-index:100; }
+  .now-speaking.show { transform:translateY(0); }
+  .wave { margin-right:8px; }
+  .add-phrase-btn { display:block; width:calc(100% - 32px); margin:12px auto; padding:14px; background:linear-gradient(135deg, #1a6b3c, #2d8a5e); color:white; border:none; border-radius:14px; font-size:1rem; font-weight:700; cursor:pointer; letter-spacing:0.5px; max-width:460px; }
+  .add-phrase-btn:active { opacity:0.85; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:flex-end; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal-box { background:white; border-radius:24px 24px 0 0; padding:24px 20px 40px; width:100%; max-width:500px; animation:slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  .modal-title { font-size:1.15rem; font-weight:800; color:#2c3e50; margin-bottom:16px; text-align:center; }
+  .modal-label { font-size:0.8rem; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px; margin-top:12px; }
+  .modal-input, .modal-select { width:100%; padding:12px 14px; border:2px solid #e0e0e0; border-radius:12px; font-size:1rem; color:#2c3e50; box-sizing:border-box; outline:none; font-family:inherit; }
+  .modal-input:focus, .modal-select:focus { border-color:#1a6b3c; }
+  .modal-btn-row { display:flex; gap:10px; margin-top:18px; }
+  .modal-cancel { flex:1; padding:13px; border:2px solid #ddd; background:white; border-radius:12px; font-size:0.95rem; font-weight:700; color:#666; cursor:pointer; }
+  .modal-save { flex:2; padding:13px; background:linear-gradient(135deg, #1a6b3c, #2d8a5e); border:none; border-radius:12px; font-size:0.95rem; font-weight:700; color:white; cursor:pointer; }
+  .modal-save:active, .modal-cancel:active { opacity:0.8; }
+  .modal-error { color:#e74c3c; font-size:0.82rem; margin-top:8px; text-align:center; min-height:18px; }
+  .delete-phrase { position:absolute; top:8px; right:8px; background:none; border:none; color:#ccc; font-size:1rem; cursor:pointer; padding:4px 6px; border-radius:8px; line-height:1; }
+  .delete-phrase:active { color:#e74c3c; }
+  .custom-badge { display:inline-block; background:#e8f5e9; color:#1a6b3c; font-size:0.6rem; font-weight:700; padding:1px 6px; border-radius:6px; margin-left:6px; letter-spacing:0.5px; vertical-align:middle; }
+  .licensed { text-align:center; color:rgba(255,255,255,0.45); font-size:0.65rem; padding:4px 16px 0; }
+</style>
+
+<style id="lock-styles">
+#lockOverlay{position:fixed;inset:0;z-index:99999;background:rgba(5,5,10,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;font-family:'Segoe UI',Arial,sans-serif}
+#lockOverlay .lock-icon{font-size:48px;margin-bottom:16px}
+#lockOverlay h2{color:#fff;font-size:22px;margin-bottom:8px;letter-spacing:1px}
+#lockOverlay p{color:#888;font-size:14px;line-height:1.6;max-width:320px;margin-bottom:20px}
+#lockOverlay .lock-input{padding:12px 16px;border-radius:10px;border:2px solid #333;background:#111;color:#fff;font-size:16px;width:260px;text-align:center;outline:none;margin-bottom:12px}
+#lockOverlay .lock-input:focus{border-color:#1a6b3c}
+#lockOverlay .lock-btn{padding:12px 32px;border-radius:10px;border:none;background:#1a6b3c;color:#fff;font-size:15px;font-weight:bold;cursor:pointer;letter-spacing:1px;transition:all 0.2s}
+#lockOverlay .lock-btn:hover{background:#2d8a5e;box-shadow:0 0 15px rgba(45,138,94,0.4)}
+#lockOverlay .lock-error{color:#e04040;font-size:13px;margin-top:8px;display:none}
+#lockOverlay .lock-demo{margin-top:18px;color:#555;font-size:13px}
+#lockOverlay .lock-demo a{color:#00aaff;text-decoration:none}
+#lockOverlay .lock-buy{margin-top:14px;display:inline-block;padding:8px 20px;border-radius:8px;background:rgba(45,138,94,0.2);border:1px solid rgba(45,138,94,0.5);color:#2d8a5e;text-decoration:none;font-size:13px;font-weight:bold}
+#lockOverlay .lock-buy:hover{background:rgba(45,138,94,0.35);color:#fff}
+</style>
+</head>
+<body>
+<div id="lockOverlay" style="display:none;">
+  <div class="lock-icon">🔒</div>
+  <h2>Unlock Full Phrasebook</h2>
+  <p>Enter your license key to unlock all medical phrases. Don't have a key? Get instant access for $4.99.</p>
+  <input type="text" class="lock-input" id="lockInput" placeholder="Enter license key" onkeypress="if(event.key==='Enter')tryUnlock()"/>
+  <button class="lock-btn" onclick="tryUnlock()">Unlock Now</button>
+  <div class="lock-error" id="lockError">Invalid code. Please try again.</div>
+  <a href="https://wordsandwheels.net" class="lock-buy">Buy Access — $4.99</a>
+  <div class="lock-demo">Want to try first? <a href="#" onclick="enterDemo();return false;">Browse demo (10 phrases)</a></div>
+</div>
+
+<div id="app">
+  <h1>ReadySpeak Spanish</h1>
+  <div class="brand">Medical Edition</div>
+  <div class="subtitle">Healthcare &amp; Caregiving Phrases</div>
+
+  <div class="save-hint">
+    <b>Tap any phrase</b> to hear it spoken aloud. Your custom phrases are saved on this device.
+  </div>
+
+  <div class="dir-toggle">
+    <button class="dir-btn active" onclick="setDirection('en-tl')">English &rarr; Spanish</button>
+    <button class="dir-btn" onclick="setDirection('tl-en')">Spanish &rarr; English</button>
+  </div>
+
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search phrases..." oninput="renderPhrases()"/>
+  </div>
+
+  <div class="cat-row" id="catRow"></div>
+  <div class="phrase-list" id="phraseList"></div>
+  <button class="add-phrase-btn" onclick="openModal()">+ Add Your Own Phrase</button>
+</div>
+
+<div class="now-speaking" id="nowSpeaking">
+  <span class="wave">🔊</span><span id="speakingText"></span>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title">Add Your Own Phrase</div>
+    <div class="modal-label">English</div>
+    <input type="text" class="modal-input" id="customEn" placeholder="Enter English phrase"/>
+    <div class="modal-label">Spanish</div>
+    <input type="text" class="modal-input" id="customTl" placeholder="Enter Spanish phrase"/>
+    <div class="modal-label">Category</div>
+    <select class="modal-select" id="customCat">
+      <option value="Medical">Medical</option>
+      <option value="Personal Care">Personal Care</option>
+      <option value="Mobility">Mobility</option>
+      <option value="Sleep &amp; Rest">Sleep &amp; Rest</option>
+      <option value="Emergency">Emergency</option>
+    </select>
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-btn-row">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-save" onclick="saveCustomPhrase()">Save Phrase</button>
+    </div>
+  </div>
+</div>
+
+<div class="licensed">ReadySpeak&trade; &mdash; Medical Edition</div>
+
+<script>
+// ===== PHRASES =====
+const PHRASES = [
+  // --- Medical ---
+  { "cat": "Medical", "en": "I'm in pain", "tl": "Tengo dolor" },
+  { "cat": "Medical", "en": "My head hurts", "tl": "Me duele la cabeza" },
+  { "cat": "Medical", "en": "My stomach hurts", "tl": "Me duele el estómago" },
+  { "cat": "Medical", "en": "My back hurts", "tl": "Me duele la espalda" },
+  { "cat": "Medical", "en": "My chest hurts", "tl": "Me duele el pecho" },
+  { "cat": "Medical", "en": "I can't breathe well", "tl": "No puedo respirar bien" },
+  { "cat": "Medical", "en": "I feel dizzy", "tl": "Me siento mareado" },
+  { "cat": "Medical", "en": "I feel nauseous", "tl": "Tengo náuseas" },
+  { "cat": "Medical", "en": "I need my medication", "tl": "Necesito mi medicamento" },
+  { "cat": "Medical", "en": "I need a doctor", "tl": "Necesito un médico" },
+  { "cat": "Medical", "en": "I need a nurse", "tl": "Necesito una enfermera" },
+  { "cat": "Medical", "en": "I fell down", "tl": "Me caí" },
+  { "cat": "Medical", "en": "I'm bleeding", "tl": "Estoy sangrando" },
+  { "cat": "Medical", "en": "I feel very weak", "tl": "Me siento muy débil" },
+  { "cat": "Medical", "en": "My leg hurts", "tl": "Me duele la pierna" },
+  { "cat": "Medical", "en": "My arm hurts", "tl": "Me duele el brazo" },
+  { "cat": "Medical", "en": "I have a fever", "tl": "Tengo fiebre" },
+  { "cat": "Medical", "en": "I'm having trouble swallowing", "tl": "Tengo problemas para tragar" },
+  { "cat": "Medical", "en": "I need the emergency button", "tl": "Necesito el botón de emergencia" },
+  { "cat": "Medical", "en": "Call 911 please", "tl": "Llame al 911 por favor" },
+  { "cat": "Medical", "en": "I need to take my pills", "tl": "Necesito tomar mis pastillas" },
+  { "cat": "Medical", "en": "I'm allergic to penicillin", "tl": "Soy alérgico a la penicilina" },
+  { "cat": "Medical", "en": "How often do I take this?", "tl": "¿Cada cuánto tomo esto?" },
+  { "cat": "Medical", "en": "What is this medicine for?", "tl": "¿Para qué es esta medicina?" },
+  { "cat": "Medical", "en": "I have a headache", "tl": "Tengo dolor de cabeza" },
+  { "cat": "Medical", "en": "I have a cough", "tl": "Tengo tos" },
+  { "cat": "Medical", "en": "My blood pressure is high", "tl": "Mi presión está alta" },
+  { "cat": "Medical", "en": "I need a glass of water with my pills", "tl": "Necesito un vaso de agua con mis pastillas" },
+  { "cat": "Medical", "en": "I feel sick", "tl": "Me siento enfermo" },
+  { "cat": "Medical", "en": "Can you check my temperature?", "tl": "¿Me puede tomar la temperatura?" },
+
+  // --- Personal Care ---
+  { "cat": "Personal Care", "en": "I need to use the bathroom", "tl": "Necesito ir al baño" },
+  { "cat": "Personal Care", "en": "I need help getting up", "tl": "Necesito ayuda para levantarme" },
+  { "cat": "Personal Care", "en": "I need help sitting down", "tl": "Necesito ayuda para sentarme" },
+  { "cat": "Personal Care", "en": "Can you help me to the bathroom?", "tl": "¿Me puede ayudar al baño?" },
+  { "cat": "Personal Care", "en": "I need a bath", "tl": "Necesito bañarme" },
+  { "cat": "Personal Care", "en": "I need to wash my hands", "tl": "Necesito lavarme las manos" },
+  { "cat": "Personal Care", "en": "I need to brush my teeth", "tl": "Necesito cepillarme los dientes" },
+  { "cat": "Personal Care", "en": "Can you help me get dressed?", "tl": "¿Me puede ayudar a vestirme?" },
+  { "cat": "Personal Care", "en": "I need clean clothes", "tl": "Necesito ropa limpia" },
+  { "cat": "Personal Care", "en": "Can you comb my hair?", "tl": "¿Me puede peinar?" },
+  { "cat": "Personal Care", "en": "I'm cold, can I have a blanket?", "tl": "Tengo frío, ¿me puede dar una cobija?" },
+  { "cat": "Personal Care", "en": "I'm too hot", "tl": "Tengo mucho calor" },
+  { "cat": "Personal Care", "en": "Can you open the window?", "tl": "¿Puede abrir la ventana?" },
+  { "cat": "Personal Care", "en": "Can you close the window?", "tl": "¿Puede cerrar la ventana?" },
+  { "cat": "Personal Care", "en": "I need a towel", "tl": "Necesito una toalla" },
+  { "cat": "Personal Care", "en": "I need help changing position", "tl": "Necesito ayuda para cambiar de posición" },
+  { "cat": "Personal Care", "en": "Can you fix my pillow?", "tl": "¿Me puede acomodar la almohada?" },
+  { "cat": "Personal Care", "en": "My bed is uncomfortable", "tl": "Mi cama está incómoda" },
+  { "cat": "Personal Care", "en": "I need a diaper change", "tl": "Necesito un cambio de pañal" },
+  { "cat": "Personal Care", "en": "I need help shaving", "tl": "Necesito ayuda para afeitarme" },
+  { "cat": "Personal Care", "en": "Can you help me wash my face?", "tl": "¿Me puede ayudar a lavarme la cara?" },
+
+  // --- Mobility ---
+  { "cat": "Mobility", "en": "I need my wheelchair", "tl": "Necesito mi silla de ruedas" },
+  { "cat": "Mobility", "en": "I need my walker", "tl": "Necesito mi andador" },
+  { "cat": "Mobility", "en": "Can you help me walk?", "tl": "¿Me puede ayudar a caminar?" },
+  { "cat": "Mobility", "en": "I want to sit in my chair", "tl": "Quiero sentarme en mi silla" },
+  { "cat": "Mobility", "en": "I want to go outside", "tl": "Quiero salir afuera" },
+  { "cat": "Mobility", "en": "I'm afraid I'll fall", "tl": "Tengo miedo de caerme" },
+  { "cat": "Mobility", "en": "My legs feel weak", "tl": "Mis piernas se sienten débiles" },
+  { "cat": "Mobility", "en": "Can you push my wheelchair?", "tl": "¿Me puede empujar la silla de ruedas?" },
+  { "cat": "Mobility", "en": "I need to stretch my legs", "tl": "Necesito estirar las piernas" },
+  { "cat": "Mobility", "en": "Can you help me stand up?", "tl": "¿Me puede ayudar a levantarme?" },
+
+  // --- Sleep & Rest ---
+  { "cat": "Sleep & Rest", "en": "I'm tired, I want to sleep", "tl": "Estoy cansado, quiero dormir" },
+  { "cat": "Sleep & Rest", "en": "Can you help me into bed?", "tl": "¿Me puede ayudar a meterme a la cama?" },
+  { "cat": "Sleep & Rest", "en": "I can't sleep", "tl": "No puedo dormir" },
+  { "cat": "Sleep & Rest", "en": "Can you raise the head of the bed?", "tl": "¿Puede subir el respaldo de la cama?" },
+  { "cat": "Sleep & Rest", "en": "Can you lower the bed?", "tl": "¿Puede bajar la cama?" },
+  { "cat": "Sleep & Rest", "en": "The bed is too high", "tl": "La cama está muy alta" },
+  { "cat": "Sleep & Rest", "en": "I need my pillow adjusted", "tl": "Necesito que acomoden mi almohada" },
+  { "cat": "Sleep & Rest", "en": "Can you close the curtains?", "tl": "¿Puede cerrar las cortinas?" },
+  { "cat": "Sleep & Rest", "en": "I need another blanket", "tl": "Necesito otra cobija" },
+
+  // --- Emergency ---
+  { "cat": "Emergency", "en": "Help me, please!", "tl": "¡Ayúdeme, por favor!" },
+  { "cat": "Emergency", "en": "I can't breathe", "tl": "No puedo respirar" },
+  { "cat": "Emergency", "en": "I'm choking", "tl": "Me estoy ahogando" },
+  { "cat": "Emergency", "en": "Someone fell", "tl": "Alguien se cayó" },
+  { "cat": "Emergency", "en": "There's a fire", "tl": "Hay un incendio" },
+  { "cat": "Emergency", "en": "I smell smoke", "tl": "Huelo humo" },
+  { "cat": "Emergency", "en": "I need an ambulance", "tl": "Necesito una ambulancia" },
+  // --- Additional Medical ---
+  { "cat": "Medical", "en": "I have a sore throat", "tl": "Me duele la garganta" },
+  { "cat": "Medical", "en": "My ear hurts", "tl": "Me duele el oído" },
+  { "cat": "Medical", "en": "I have a rash", "tl": "Tengo una erupción" },
+  { "cat": "Medical", "en": "Can you take my blood pressure?", "tl": "¿Me puede tomar la presión?" },
+  { "cat": "Medical", "en": "I have chills", "tl": "Tengo escalofríos" },
+  { "cat": "Medical", "en": "I'm sweating a lot", "tl": "Estoy sudando mucho" },
+  { "cat": "Medical", "en": "I need a painkiller", "tl": "Necesito un analgésico" },
+  { "cat": "Medical", "en": "The pain is getting worse", "tl": "El dolor está empeorando" },
+  { "cat": "Medical", "en": "The pain has gone away", "tl": "El dolor se ha ido" },
+  { "cat": "Medical", "en": "I feel much better now", "tl": "Me siento mucho mejor ahora" },
+  // --- Additional Personal Care ---
+  { "cat": "Personal Care", "en": "Can you help me with my socks?", "tl": "¿Me puede ayudar con los calcetines?" },
+  { "cat": "Personal Care", "en": "I need help with my shoes", "tl": "Necesito ayuda con los zapatos" },
+  { "cat": "Personal Care", "en": "Can you put lotion on my hands?", "tl": "¿Me puede poner crema en las manos?" },
+  { "cat": "Personal Care", "en": "I need a tissue", "tl": "Necesito un pañuelo" },
+  { "cat": "Personal Care", "en": "I need to blow my nose", "tl": "Necesito sonarme la nariz" },
+  // --- Additional Mobility ---
+  { "cat": "Mobility", "en": "Can you reposition me?", "tl": "¿Me puede reposicionar?" },
+  { "cat": "Mobility", "en": "I want to go to the common room", "tl": "Quiero ir a la sala común" },
+  { "cat": "Mobility", "en": "Can you adjust the footrests?", "tl": "¿Me puede ajustar los reposapiés?" },
+  // --- Additional Sleep & Rest ---
+  { "cat": "Sleep & Rest", "en": "Someone is snoring too loud", "tl": "Alguien está roncando muy fuerte" },
+  { "cat": "Sleep & Rest", "en": "Can you turn off the hallway light?", "tl": "¿Puede apagar la luz del pasillo?" },
+  { "cat": "Sleep & Rest", "en": "I need my sleep mask", "tl": "Necesito mi máscara para dormir" },
+  // --- Additional Emergency ---
+  { "cat": "Emergency", "en": "I feel like I'm going to faint", "tl": "Siento que me voy a desmayar" },
+  { "cat": "Emergency", "en": "My heart is racing", "tl": "Mi corazón late muy rápido" }
+];
+
+// ===== STATE =====
+let direction = 'en-tl';
+let activeCat = 'All';
+let searchQuery = '';
+const TL_LANG = 'es-ES';
+
+function loadCustomPhrases() {
+  try { return JSON.parse(localStorage.getItem('customPhrases_spanish_medical') || '[]'); }
+  catch { return []; }
+}
+function saveCustomPhrasesToStorage(arr) {
+  localStorage.setItem('customPhrases_spanish_medical', JSON.stringify(arr));
+}
+let CUSTOM_PHRASES = loadCustomPhrases();
+
+function getAllPhrases() { return [...PHRASES, ...CUSTOM_PHRASES]; }
+function getCategories() {
+  const all = getAllPhrases();
+  const cats = ['All', ...Array.from(new Set(all.map(p => p.cat)))];
+  if (CUSTOM_PHRASES.length > 0 && !cats.includes('My Phrases')) cats.push('My Phrases');
+  return cats;
+}
+
+function init() {
+  renderCategories();
+  renderPhrases();
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
+  document.addEventListener('touchstart', function unlock() {
+    if (window.speechSynthesis) {
+      const u = new SpeechSynthesisUtterance('');
+      window.speechSynthesis.speak(u);
+    }
+    document.removeEventListener('touchstart', unlock);
+  }, { once: true });
+}
+
+function setDirection(dir) {
+  direction = dir;
+  document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderPhrases();
+}
+
+function renderCategories() {
+  const row = document.getElementById('catRow');
+  const cats = getCategories();
+  row.innerHTML = cats.map(function(c) {
+    return '<button class="cat-pill ' + (c === activeCat ? 'active' : '') + '" onclick="setCategory(\'' + c + '\')">' + c + '</button>';
+  }).join('');
+}
+
+function setCategory(cat) {
+  activeCat = cat;
+  renderCategories();
+  renderPhrases();
+}
+
+function renderPhrases() {
+  searchQuery = document.getElementById('searchInput').value.toLowerCase();
+  const list = document.getElementById('phraseList');
+  let all = getAllPhrases();
+
+  if (activeCat !== 'All' && activeCat !== 'My Phrases') {
+    all = all.filter(function(p) { return p.cat === activeCat; });
+  }
+  if (activeCat === 'My Phrases') {
+    all = CUSTOM_PHRASES;
+  }
+  if (searchQuery) {
+    all = all.filter(function(p) {
+      return p.en.toLowerCase().includes(searchQuery) || p.tl.toLowerCase().includes(searchQuery);
+    });
+  }
+
+  if (all.length === 0) {
+    list.innerHTML = '<div class="no-results">No phrases found. Try a different search.</div>';
+    return;
+  }
+
+  list.innerHTML = all.map(function(p, i) {
+    var idx = PHRASES.indexOf(p);
+    var isCustom = idx === -1;
+    var enText = direction === 'en-tl' ? p.en : p.tl;
+    var tlText = direction === 'en-tl' ? p.tl : p.en;
+    var speakLang = direction === 'en-tl' ? TL_LANG : 'en-US';
+    var safeText = tlText.replace(/'/g, "\\'");
+    var customIdx = isCustom ? CUSTOM_PHRASES.indexOf(p) : -1;
+    return '<div class="phrase-card" onclick="speak(this, \'' + safeText + '\', \'' + speakLang + '\')">' +
+      '<div class="phrase-tag">' + p.cat + '</div>' +
+      '<div class="phrase-en">' + enText + '</div>' +
+      '<div class="phrase-es"><span class="speak-icon">🔊</span>' + tlText + (isCustom ? '<span class="custom-badge">MY PHRASE</span>' : '') + '</div>' +
+      (isCustom ? '<button class="delete-phrase" onclick="deleteCustomPhrase(' + customIdx + '); event.stopPropagation();">✕</button>' : '') +
+    '</div>';
+  }).join('');
+}
+
+var currentUtterance = null;
+function speak(card, text, lang) {
+  document.querySelectorAll('.phrase-card.speaking').forEach(function(c) { c.classList.remove('speaking'); });
+  card.classList.add('speaking');
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    u.rate = 0.85;
+    u.onend = function() {
+      card.classList.remove('speaking');
+      document.getElementById('nowSpeaking').classList.remove('show');
+    };
+    u.onstart = function() {
+      document.getElementById('speakingText').textContent = text;
+      document.getElementById('nowSpeaking').classList.add('show');
+    };
+    currentUtterance = u;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+// ===== CUSTOM PHRASES =====
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  document.getElementById('customEn').value = '';
+  document.getElementById('customTl').value = '';
+  document.getElementById('modalError').textContent = '';
+}
+function saveCustomPhrase() {
+  var en = document.getElementById('customEn').value.trim();
+  var tl = document.getElementById('customTl').value.trim();
+  var cat = document.getElementById('customCat').value;
+  if (!en || !tl) {
+    document.getElementById('modalError').textContent = 'Both fields are required.';
+    return;
+  }
+  CUSTOM_PHRASES.push({ en: en, tl: tl, cat: cat || 'Custom' });
+  saveCustomPhrasesToStorage(CUSTOM_PHRASES);
+  closeModal();
+  renderCategories();
+  renderPhrases();
+}
+function deleteCustomPhrase(idx) {
+  CUSTOM_PHRASES.splice(idx, 1);
+  saveCustomPhrasesToStorage(CUSTOM_PHRASES);
+  renderCategories();
+  renderPhrases();
+}
+
+// ===== LICENSE =====
+var DEMO_LIMIT = 10;
+var unlocked = false;
+
+function tryUnlock() {
+  var input = document.getElementById('lockInput').value.trim();
+  if (!input) return;
+  document.getElementById('lockError').style.display = 'none';
+  fetch('https://john-174a7c51.base44.app/functions/verifyLicense', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ license: input, product: 'spanish-medical' })
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    if (data.success) {
+      localStorage.setItem('license_spanish_medical', input);
+      unlocked = true;
+      document.getElementById('lockOverlay').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      init();
+    } else {
+      document.getElementById('lockError').style.display = 'block';
+    }
+  }).catch(function(e) {
+    document.getElementById('lockError').style.display = 'block';
+  });
+}
+
+function enterDemo() {
+  document.getElementById('lockOverlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  init();
+}
+
+// On load
+(function() {
+  var saved = localStorage.getItem('license_spanish_medical');
+  if (saved) {
+    unlocked = true;
+    document.getElementById('lockOverlay').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } else {
+    document.getElementById('lockOverlay').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+})();
+</script>
+</body>
+</html>
